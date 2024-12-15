@@ -1,0 +1,37 @@
+
+    % Define grid boundaries
+    boundary(0, 9).
+    boundary(0, 9).
+
+    % Define obstacles
+    obstacle(4, 4).
+obstacle(4, 0).
+obstacle(7, 1).
+obstacle(4, 3).
+obstacle(7, 0).
+obstacle(0, 9).
+obstacle(2, 0).
+obstacle(5, 1).
+obstacle(0, 6).
+obstacle(4, 2).
+obstacle(5, 3).
+obstacle(4, 1).
+
+    % Define clues
+    
+
+    % Rules for valid moves
+    valid_move(CurrentX, CurrentY, TargetX, TargetY) :-
+        boundary(0, 9),
+        boundary(0, 9),
+        not obstacle(TargetX, TargetY),
+        (
+            (TargetX = CurrentX + 1, TargetY = CurrentY);  % Down
+            (TargetX = CurrentX - 1, TargetY = CurrentY);  % Up
+            (TargetX = CurrentX, TargetY = CurrentY + 1);  % Right
+            (TargetX = CurrentX, TargetY = CurrentY - 1)   % Left
+        ).
+
+    % Goal: Check if the move is valid
+    goal: valid_move(0, 0, 1, 0).
+    
