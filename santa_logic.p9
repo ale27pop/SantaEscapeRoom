@@ -1,0 +1,50 @@
+% --- Santa Escape Room Logic ---
+% Propositions:
+% cookie_smell(x, y), cold_breeze(x, y), grinch_sound(x, y), safe(x, y), move_to(x, y, u, v)
+% present(x, y), grinch(x, y), exit(x, y), obstacle(x, y), adjacent(x, y, u, v)
+
+% --- Adjacent Relations ---
+adjacent(6, 6, 6, 5).
+adjacent(6, 6, 6, 7).
+adjacent(6, 6, 5, 6).
+adjacent(6, 6, 7, 6).
+
+% --- Rules ---
+all x all y (
+    cookie_smell(x, y) <-> exists u exists v (adjacent(x, y, u, v) & present(u, v))
+).
+
+all x all y (
+    cold_breeze(x, y) <-> exists u exists v (adjacent(x, y, u, v) & exit(u, v))
+).
+
+all x all y (
+    grinch_sound(x, y) <-> exists u exists v (adjacent(x, y, u, v) & grinch(u, v))
+).
+
+all x all y (
+    safe(x, y) <-> ~grinch(x, y) & ~obstacle(x, y)
+).
+
+all x all y all u all v (
+    move_to(x, y, u, v) <-> (
+        adjacent(x, y, u, v) & safe(u, v) & (u != last_x | v != last_y)
+    )
+).
+
+% --- Backup Rule: Move to a position without a Grinch clue ---
+all x all y all u all v (
+    backup_move(x, y, u, v) <-> (
+        adjacent(x, y, u, v) & ~grinch_sound(u, v) & ~(u = last_x & v = last_y)
+    )
+).
+
+% --- Observations ---
+santa_position(6, 6).
+last_position(6, 6).
+obstacle(6, 7).
+obstacle(5, 6).
+
+% --- Goal: Find a safe move or backup move ---
+goal: (exists u exists v (move_to(6, 6, u, v))) |
+      (exists u exists v (backup_move(6, 6, u, v))).

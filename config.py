@@ -1,24 +1,24 @@
 import pygame
+from constants import SCREEN_WIDTH, SCREEN_HEIGHT, GRID_ROWS, GRID_COLS, CELL_SIZE, COLORS
 
 # Initialize Pygame
 pygame.init()
 
-# Grid configuration
-GRID_ROWS = 10  # Smaller grid size
-GRID_COLS = 10
-CELL_SIZE = 50  # Smaller cell size
+# Grid Configuration (using constants)
+GRID_WIDTH = GRID_COLS * CELL_SIZE  # Total grid width
+GRID_HEIGHT = GRID_ROWS * CELL_SIZE  # Total grid height
 
-GRID_WIDTH = GRID_COLS * CELL_SIZE
-GRID_HEIGHT = GRID_ROWS * CELL_SIZE
+STATUS_HEIGHT = 100  # Height for the status section at the bottom
+LEGEND_WIDTH = SCREEN_WIDTH - GRID_WIDTH  # Dynamically calculate legend width
 
-STATUS_HEIGHT = 100  # Height of the status section
-LEGEND_WIDTH = 250   # Width for the legend
-
-SCREEN_WIDTH = GRID_WIDTH + LEGEND_WIDTH  # Total screen width (legend + grid)
+# Screen Configuration (using constants)
+SCREEN_WIDTH = max(SCREEN_WIDTH, GRID_WIDTH + LEGEND_WIDTH)  # Ensure screen width accommodates the grid and legend
 SCREEN_HEIGHT = GRID_HEIGHT + STATUS_HEIGHT  # Total screen height
 
+# Create the screen
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Santa's Escape Room")
 
-# Font configuration
-font = pygame.font.Font(None, 30)
+# Font Configuration
+FONT_SIZE = 30  # Size of the font
+font = pygame.font.Font(None, FONT_SIZE)  # Default Pygame font with specified size

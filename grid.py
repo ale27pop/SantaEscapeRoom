@@ -6,7 +6,6 @@ def load_assets():
     santa_image = pygame.image.load("assets/santa.jpg")
     present_image = pygame.image.load("assets/present.jpg")
     obstacle_image = pygame.image.load("assets/flour.jpg")
-    puzzle_image = pygame.image.load("assets/quiz.jpg")
     exit_image = pygame.image.load("assets/exit.jpg")
     grinch_image = pygame.image.load("assets/grinch.jpg")
 
@@ -15,47 +14,88 @@ def load_assets():
         "santa": pygame.transform.scale(santa_image, (CELL_SIZE, CELL_SIZE)),
         "present": pygame.transform.scale(present_image, (CELL_SIZE, CELL_SIZE)),
         "obstacle": pygame.transform.scale(obstacle_image, (CELL_SIZE, CELL_SIZE)),
-        "puzzle": pygame.transform.scale(puzzle_image, (CELL_SIZE, CELL_SIZE)),
         "exit": pygame.transform.scale(exit_image, (CELL_SIZE, CELL_SIZE)),
         "grinch": pygame.transform.scale(grinch_image, (CELL_SIZE, CELL_SIZE)),
     }
     return assets
 
-
-def draw_grid(screen, assets, santa_position, grinch_position, presents, puzzles, obstacles, exit_point):
-    """Draws the game grid and all elements."""
+def draw_grid(screen, assets, santa_position, grinch_position, presents, obstacles, exit_point):
+    """
+    Draws the game grid based on the provided positions for Santa, Grinch, presents, obstacles, and the exit.
+    Santa can occupy the same position as an object temporarily (overwriting).
+    """
     screen.fill(COLORS["background"])
 
-    # Draw grid
+    # Draw the grid
     for row in range(GRID_ROWS):
         for col in range(GRID_COLS):
             rect = pygame.Rect(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE)
             pygame.draw.rect(screen, COLORS["grid"], rect, 1)
 
-    # Add proximity indicators
-    for present in presents:
-        add_proximity_indicator(screen, present, "cookie", CLUE_COLORS["cookie_smell"])
-    for obstacle in obstacles:
-        add_proximity_indicator(screen, obstacle, "flour", CLUE_COLORS["flour_smell"])
-    for puzzle in puzzles:
-        add_proximity_indicator(screen, puzzle, "puzzle", CLUE_COLORS["puzzle_hint"])
-    add_proximity_indicator(screen, exit_point, "cold_breeze", CLUE_COLORS["cold_breeze"])
-    add_proximity_indicator(screen, grinch_position, "grinch_sound", CLUE_COLORS["grinch_sound"])
+    # Add proximity indicators for objects
+    add_proximity_clues(screen, presents, CLUE_COLORS["cookie_smell"], "top_left")  # Clues for presents
+    add_proximity_clues(screen, obstacles, CLUE_COLORS["flour_smell"], "bottom_right")  # Clues for obstacles
+    add_proximity_clues(screen, [exit_point], CLUE_COLORS["cold_breeze"], "top_right")  # Clues for exit
+    add_proximity_clues(screen, [tuple(grinch_position)], CLUE_COLORS["grinch_sound"], "bottom_left")  # Clues for Grinch
 
-    # Draw elements
-    for obstacle in obstacles:
-        screen.blit(assets["obstacle"], (obstacle[1] * CELL_SIZE, obstacle[0] * CELL_SIZE))
+    # Draw game elements, except Santa (drawn last to allow overwriting)
     for present in presents:
-        screen.blit(assets["present"], (present[1] * CELL_SIZE, present[0] * CELL_SIZE))
-    for puzzle in puzzles:
-        screen.blit(assets["puzzle"], (puzzle[1] * CELL_SIZE, puzzle[0] * CELL_SIZE))
-    screen.blit(assets["exit"], (exit_point[1] * CELL_SIZE, exit_point[0] * CELL_SIZE))
+        if present != tuple(santa_position):
+            screen.blit(assets["present"], (present[1] * CELL_SIZE, present[0] * CELL_SIZE))
+    for obstacle in obstacles:
+        if obstacle != tuple(santa_position):
+            screen.blit(assets["obstacle"], (obstacle[1] * CELL_SIZE, obstacle[0] * CELL_SIZE))
+    if exit_point != tuple(santa_position):
+        screen.blit(assets["exit"], (exit_point[1] * CELL_SIZE, exit_point[0] * CELL_SIZE))
+    if grinch_position != santa_position:
+        screen.blit(assets["grinch"], (grinch_position[1] * CELL_SIZE, grinch_position[0] * CELL_SIZE))
+
+    # Draw Santa last (overwriting other objects temporarily)
     screen.blit(assets["santa"], (santa_position[1] * CELL_SIZE, santa_position[0] * CELL_SIZE))
-    screen.blit(assets["grinch"], (grinch_position[1] * CELL_SIZE, grinch_position[0] * CELL_SIZE))
 
+def add_proximity_clues(screen, objects, clue_color, position):
+    """
+    Adds visual clues dynamically based on proximity to specific elements.
+    The clues are placed in specific parts of the adjacent cells:
+        - "top_left": cookie smell (present clue)
+        - "bottom_right": flour smell (trap)
+        - "top_right": cold breeze (exit)
+        - "bottom_left": grinch sound (grinch)
+    """
+    offsets = [
+        (0, -1),  # Left
+        (0, 1),   # Right
+        (-1, 0),  # Up
+        (1, 0),   # Down
+    ]
 
-def add_proximity_indicator(screen, position, indicator_type, color):
-    """Adds visual clues around specific cells."""
+    for obj in objects:
+        for dx, dy in offsets:
+            nx, ny = obj[0] + dx, obj[1] + dy
+            if 0 <= nx < GRID_ROWS and 0 <= ny < GRID_COLS:
+                rect_x = ny * CELL_SIZE
+                rect_y = nx * CELL_SIZE
+                if position == "top_left":
+                    pygame.draw.circle(screen, clue_color, (rect_x + 10, rect_y + 10), 5)
+                elif position == "bottom_right":
+                    pygame.draw.circle(screen, clue_color, (rect_x + CELL_SIZE - 10, rect_y + CELL_SIZE - 10), 5)
+                elif position == "top_right":
+                    pygame.draw.circle(screen, clue_color, (rect_x + CELL_SIZE - 10, rect_y + 10), 5)
+                elif position == "bottom_left":
+                    pygame.draw.circle(screen, clue_color, (rect_x + 10, rect_y + CELL_SIZE - 10), 5)
+
+def update_grid(grid, position, value):
+    """
+    Updates the grid matrix with the specified value at the given position.
+    """
+    x, y = position
+    if 0 <= x < GRID_ROWS and 0 <= y < GRID_COLS:
+        grid[x][y] |= value
+
+def clear_clues(grid, position):
+    """
+    Clears clues around the given position in the grid matrix.
+    """
     x, y = position
     offsets = [
         (0, -1),  # Left
@@ -66,45 +106,8 @@ def add_proximity_indicator(screen, position, indicator_type, color):
 
     for dx, dy in offsets:
         nx, ny = x + dx, y + dy
-        if 0 <= nx < GRID_ROWS and 0 <= ny < GRID_COLS:  # Ensure within bounds
-            rect_x = ny * CELL_SIZE
-            rect_y = nx * CELL_SIZE
-
-            if indicator_type == "cookie":
-                pygame.draw.circle(screen, color, (rect_x + CELL_SIZE - 10, rect_y + 10), 5)
-            elif indicator_type == "flour":
-                pygame.draw.circle(screen, color, (rect_x + 10, rect_y + 10), 5)
-            elif indicator_type == "puzzle":
-                pygame.draw.circle(screen, color, (rect_x + 10, rect_y + CELL_SIZE - 10), 5)
-            elif indicator_type == "cold_breeze":
-                pygame.draw.circle(screen, color, (rect_x + CELL_SIZE - 10, rect_y + CELL_SIZE - 10), 5)
-            elif indicator_type == "grinch_sound":
-                pygame.draw.circle(screen, color, (rect_x + 10, rect_y + CELL_SIZE - 10), 5)
-
-
-def clear_clues(screen, position):
-    """
-    Clears clues around the given position.
-    """
-    x, y = position
-    offsets = [
-        (0, -1),  # Left
-        (0, 1),   # Right
-        (-1, 0),  # Up
-        (1, 0),   # Down
-    ]
-
-    for dx, dy in offsets:
-        nx, ny = x + dx, y + dy
-        # Ensure within grid boundaries
         if 0 <= nx < GRID_ROWS and 0 <= ny < GRID_COLS:
-            rect_x = ny * CELL_SIZE
-            rect_y = nx * CELL_SIZE
-
-            # Redraw the cell background to "clear" the clue
-            pygame.draw.rect(screen, COLORS["background"], (rect_x, rect_y, CELL_SIZE, CELL_SIZE))
-            pygame.draw.rect(screen, COLORS["grid"], (rect_x, rect_y, CELL_SIZE, CELL_SIZE), 1)
-
+            grid[nx][ny] &= ~0xFF  # Clear specific proximity indicators
 
 def draw_legend(screen, font, legend_x, legend_y):
     """
